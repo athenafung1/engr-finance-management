@@ -7,6 +7,8 @@ from employee import Employee
 from customer import Customer
 from vendor import Vendor
 from inventory_item import InventoryItem
+from balance_sheet import BalanceSheet, Assets, Liabilities
+from income_statement import IncomeStatement, Sales, Expenses
 
 
 class Company:
@@ -17,8 +19,18 @@ class Company:
         self.cursor = self.connection.cursor()
         self.create_tables()
 
-    def create_tables(self):
 
+        self.assets = Assets(200000, 0, 0, 0, 0, 0)
+        self.liabilities = Liabilities(0, 0, 0, 0)
+        self.balance_sheet = BalanceSheet(self.assets, self.liabilities)
+
+        self.sales = Sales(50000, 100)
+        self.expenses = Expenses(20000, 0, 10000, 15000)
+        self.other_income = 0
+        self.income_taxes = 0
+        self.income_statement = IncomeStatement(self.sales, self.expenses, self.other_income, self.income_taxes)
+
+    def create_tables(self):
         # Create Employees Table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS Employees
                             (ID INTEGER PRIMARY KEY AUTOINCREMENT, 

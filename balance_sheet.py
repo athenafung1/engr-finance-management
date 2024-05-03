@@ -22,6 +22,7 @@ class Assets:
     
     def get_total_assets(self):
         return self.get_total_current_assets() + self.get_total_fixed_assets()
+
 class Liabilities:
     def __init__(self,
                  accounts_payable,
@@ -42,6 +43,7 @@ class Liabilities:
     
     def get_total_liabilities(self):
         return self.get_total_current_liabilities() + self.get_total_long_term_debt()
+
 class BalanceSheet:
     def __init__(self, 
                  assets,
@@ -51,7 +53,7 @@ class BalanceSheet:
         self.net_worth = self.calculate_net_worth()
         
     def calculate_net_worth(self):
-        net_worth = self.assets - self.liabilities
+        net_worth = self.assets.get_total_assets() - self.liabilities.get_total_liabilities()
         return net_worth
     
     def update_assets(self, new_assets):

@@ -1,85 +1,120 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-import sqlite3
+from tkinter import ttk
 
-class InvoicePopup:
-    def __init__(self, master):
+class Sales:
+    def __init__(self, 
+                 sales, 
+                 cost_of_goods):
+        self.sales = sales
+        self.cost_of_goods = cost_of_goods
+
+    def get_gross_profits(self):
+        return self.sales - self.cost_of_goods
+
+class Expenses:
+    def __init__(self,
+                 payroll,
+                 payroll_witholding,
+                 bills,
+                 annual_expenses):
+        self.payroll = payroll
+        self.payroll_witholding = payroll_witholding
+        self.bills = bills
+        self.annual_expenses = annual_expenses
+    def get_total_expenses(self):
+        return self.payroll + self.bills + self.annual_expenses
+    
+class IncomeStatement:
+    def __init__(self, 
+                 sales,
+                 expenses,
+                 other_income,
+                 income_taxes):
+        self.sales = sales
+        self.expenses = expenses
+        self.other_income = other_income
+        self.income_taxes = income_taxes
+        self.net_income = self.calculate_net_income()
+        
+    def calculate_net_income(self):
+        net_income = self.sales.get_gross_profits() - self.expenses.get_total_expenses()
+        return net_income
+    
+    def update_sales(self, new_sales):
+        self.sales = new_sales
+        self.net_income = self.calculate_net_income()
+
+    def update_expenses(self, new_expenses):
+        self.expenses = new_expenses
+        self.net_income = self.calculate_net_income()
+    
+
+
+import tkinter as tk
+from tkinter import ttk
+
+class IncomeStatementPopup:
+    def __init__(self, master, income_statement):
         self.master = master
-        self.master.title("Create Invoice")
-        self.connection = sqlite3.connect("company_database.db")
-        self.cursor = self.connection.cursor()
+        self.income_statement = income_statement
 
-        # Dropdown menu to select a customer
-        self.selected_customer = tk.StringVar()
-        self.customer_dropdown = ttk.Combobox(master, textvariable=self.selected_customer)
-        self.customer_dropdown.pack(pady=10)
-        self.populate_customer_dropdown()
+        self.popup = tk.Toplevel(master)
+        self.popup.title("Income Statement")
 
-        # Display current units in stock
-        self.units_label = ttk.Label(master, text="Current Units in Stock:")
-        self.units_label.pack(pady=5)
-        self.display_current_units()
+        # Define bold font
+        bold_font = ("TkDefaultFont", 10, "bold")
+        section_font = ("TkDefaultFont", 12, "bold")
 
-        # Entry to enter the number of units to invoice
-        self.units_entry = ttk.Entry(master)
-        self.units_entry.pack(pady=5)
+        # Sales Section
+        tk.Label(self.popup, text="Sales", font=section_font).grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text="Sales:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.sales.sales}").grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-        # Button to confirm and create the invoice
-        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.create_invoice)
-        self.create_invoice_button.pack(pady=10)
+        tk.Label(self.popup, text="Cost of Goods:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.sales.cost_of_goods}").grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-    def populate_customer_dropdown(self):
-        self.cursor.execute("SELECT COMPANY_NAME FROM Customers")
-        customers = [row[0] for row in self.cursor.fetchall()]
-        self.customer_dropdown['values'] = customers
+        tk.Label(self.popup, text="Gross Profit:", font=bold_font).grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.sales.get_gross_profits()}", font=bold_font).grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
-    def display_current_units(self):
-        # Add logic to fetch and display current units in stock
-        # For demonstration purposes, just show a hardcoded value
-        units_in_stock = 100
-        self.units_label.config(text=f"Current Units in Stock: {units_in_stock}")
+        # Expenses Section
+        tk.Label(self.popup, text="Expenses", font=section_font).grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text="Payroll:").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.expenses.payroll}").grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
-    def create_invoice(self):
-        selected_customer = self.selected_customer.get()
-        units_to_invoice = self.units_entry.get()
+        tk.Label(self.popup, text="Payroll Withholding:").grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.expenses.payroll_witholding}").grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
-        if selected_customer and units_to_invoice:
-            # Add logic to create the invoice and update databases
-            print(f"Creating invoice for {units_to_invoice} units for customer {selected_customer}")
-            # Update the balance sheet, income statement, and inventory databases
-            self.update_balance_sheet(selected_customer, units_to_invoice)
-            self.update_income_statement(units_to_invoice)
-            self.update_inventory(units_to_invoice)
-            messagebox.showinfo("Invoice Created", f"Invoice for {units_to_invoice} units created successfully for customer {selected_customer}.")
-        else:
-            messagebox.showwarning("Incomplete Information", "Please select a customer and enter the number of units to invoice.")
+        tk.Label(self.popup, text="Bills:").grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.expenses.bills}").grid(row=7, column=1, padx=5, pady=5, sticky="w")
 
-    def update_balance_sheet(self, customer, units):
-        # Add logic to update the balance sheet with receivables from the sale
-        pass
+        tk.Label(self.popup, text="Annual Expenses:").grid(row=8, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.expenses.annual_expenses}").grid(row=8, column=1, padx=5, pady=5, sticky="w")
 
-    def update_income_statement(self, units):
-        # Add logic to update the income statement with sales
-        pass
+        tk.Label(self.popup, text="Total Expenses:", font=bold_font).grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.expenses.get_total_expenses()}", font=bold_font).grid(row=9, column=1, padx=5, pady=5, sticky="w")
 
-    def update_inventory(self, units):
-        # Add logic to update the inventory to reflect the sale of complete units
-        pass
+        # Net Section
+        tk.Label(self.popup, text="Net", font=section_font).grid(row=10, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text="Other Income:").grid(row=11, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.other_income}").grid(row=11, column=1, padx=5, pady=5, sticky="w")
 
-class GUI:
-    def __init__(self, master):
-        self.master = master
-        self.master.title("Main GUI")
+        tk.Label(self.popup, text="Operating Income:").grid(row=12, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.sales.get_gross_profits() - self.income_statement.expenses.get_total_expenses()}").grid(row=12, column=1, padx=5, pady=5, sticky="w")
 
-        # Create a button to open the invoice popup
-        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
-        self.create_invoice_button.pack(pady=10)
+        tk.Label(self.popup, text="Income Taxes:").grid(row=13, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.income_taxes}").grid(row=13, column=1, padx=5, pady=5, sticky="w")
 
-    def open_invoice_popup(self):
-        popup = tk.Toplevel(self.master)
-        invoice_popup = InvoicePopup(popup)
+        tk.Label(self.popup, text="Net Income:", font=bold_font).grid(row=14, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.popup, text=f"${self.income_statement.net_income}", font=bold_font).grid(row=14, column=1, padx=5, pady=5, sticky="w")
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = GUI(root)
+    
+    # Create sample objects for Sales, Expenses, and IncomeStatement
+    sales = Sales(50000, 30000)
+    expenses = Expenses(20000, 5000, 10000, 15000)
+    income_statement = IncomeStatement(sales, expenses, 5000, 10000)
+    
+    IncomeStatementPopup(root, income_statement)
+    
     root.mainloop()

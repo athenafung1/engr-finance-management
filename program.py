@@ -10,6 +10,7 @@ from employee import Employee
 from customer import Customer
 from vendor import Vendor
 from inventory_item import InventoryItem
+from balance_sheet import BalanceSheet, Assets, Liabilities
 
 class ViewDatabasePopup:
     def __init__(self, master, cursor, table_name):
@@ -198,6 +199,133 @@ class InvoicePopup:
         # Add logic to update the inventory to reflect the sale of complete units
         pass
 
+class BalanceSheetPopup:
+    def __init__(self, master, balance_sheet):
+        self.master = master
+        self.balance_sheet = balance_sheet
+
+        self.create_assets_table()
+        self.create_liabilities_table()
+
+    def create_assets_table(self):
+        # Create assets treeview
+        self.assets_tree = ttk.Treeview(self.master)
+        self.assets_tree.pack(side="left", fill="both", expand=True)
+
+        # Configure assets columns
+        self.assets_tree["columns"] = ("Value")
+        self.assets_tree.column("#0", width=200, anchor=tk.W)
+        self.assets_tree.heading("#0", text="Item", anchor=tk.W)
+
+        self.assets_tree.column("Value", width=200, anchor=tk.W)
+        self.assets_tree.heading("Value", text="Value", anchor=tk.W)
+
+        # Add assets section
+        assets_node = self.assets_tree.insert("", tk.END, text="Assets", open=True)
+
+        self.add_tree_node(self.assets_tree, assets_node, "Cash", self.balance_sheet.assets.cash)
+        self.add_tree_node(self.assets_tree, assets_node, "Accounts Receivable", self.balance_sheet.assets.accounts_recv)
+        self.add_tree_node(self.assets_tree, assets_node, "Inventory", self.balance_sheet.assets.inventory)
+
+        total_current_assets = self.balance_sheet.assets.get_total_current_assets()
+        self.add_tree_node_bold(self.assets_tree, assets_node, "Total Current Assets", total_current_assets)
+        self.add_tree_node(self.assets_tree, assets_node, "Land/Buildings", self.balance_sheet.assets.land_buildings)
+        self.add_tree_node(self.assets_tree, assets_node, "Equipment", self.balance_sheet.assets.equipment)
+        self.add_tree_node(self.assets_tree, assets_node, "Furniture and Fixtures", self.balance_sheet.assets.furniture_fixtures)
+
+        total_fixed_assets = self.balance_sheet.assets.get_total_fixed_assets()
+        self.add_tree_node_bold(self.assets_tree, assets_node, "Total Fixed Assets", total_fixed_assets)
+        self.add_tree_node_bold(self.assets_tree, assets_node, "Total Assets", total_current_assets + total_fixed_assets)
+
+    def create_liabilities_table(self):
+        # Create liabilities treeview
+        self.liabilities_tree = ttk.Treeview(self.master)
+        self.liabilities_tree.pack(side="left", fill="both", expand=True)
+
+        # Configure liabilities columns
+        self.liabilities_tree["columns"] = ("Value")
+        self.liabilities_tree.column("#0", width=200, anchor=tk.W)
+        self.liabilities_tree.heading("#0", text="Item", anchor=tk.W)
+
+        self.liabilities_tree.column("Value", width=200, anchor=tk.W)
+        self.liabilities_tree.heading("Value", text="Value", anchor=tk.W)
+
+        # Add liabilities section
+        liabilities_node = self.liabilities_tree.insert("", tk.END, text="Liabilities & Net Worth", open=True)
+
+        self.add_tree_node(self.liabilities_tree, liabilities_node, "Accounts Payable", self.balance_sheet.liabilities.accounts_payable)
+        self.add_tree_node(self.liabilities_tree, liabilities_node, "Notes Payable", self.balance_sheet.liabilities.notes_payable)
+        self.add_tree_node(self.liabilities_tree, liabilities_node, "Accruals", self.balance_sheet.liabilities.accruals)
+
+        total_current_liabilities = self.balance_sheet.liabilities.get_total_current_liabilities()
+        self.add_tree_node_bold(self.liabilities_tree, liabilities_node, "Total Current Liabilities", total_current_liabilities)
+        self.add_tree_node(self.liabilities_tree, liabilities_node, "Mortgage", self.balance_sheet.liabilities.mortgage)
+
+        total_long_term_debt = self.balance_sheet.liabilities.get_total_long_term_debt()
+        self.add_tree_node_bold(self.liabilities_tree, liabilities_node, "Total Long Term Debt", total_long_term_debt)
+        self.add_tree_node_bold(self.liabilities_tree, liabilities_node, "Total Liabilities", total_current_liabilities + total_long_term_debt)
+
+        self.add_tree_node_bold(self.liabilities_tree, liabilities_node, "Net Worth", self.balance_sheet.net_worth)
+
+    def add_tree_node(self, tree, parent, text, value):
+        tree.insert(parent, tk.END, text=text, values=(value,))
+
+    def add_tree_node_bold(self, tree, parent, text, value):
+        item = tree.insert(parent, tk.END, text=text, values=(value,))
+        tree.tag_configure('bold', font=('Arial', 10, 'bold'))
+        tree.item(item, tags=('bold',))
+
+class IncomeStatementPopup:
+    def __init__(self, master, income_statement):
+        self.master = master
+        self.income_statement = income_statement
+
+        # Define bold font
+        bold_font = ("TkDefaultFont", 10, "bold")
+        section_font = ("TkDefaultFont", 12, "bold")
+
+        # Sales Section
+        tk.Label(self.master, text="Sales", font=section_font).grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text="Sales:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.sales.sales}").grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Cost of Goods:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.sales.cost_of_goods}").grid(row=2, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Gross Profit:", font=bold_font).grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.sales.get_gross_profits()}", font=bold_font).grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+        # Expenses Section
+        tk.Label(self.master, text="Expenses", font=section_font).grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text="Payroll:").grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.expenses.payroll}").grid(row=5, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Payroll Withholding:").grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.expenses.payroll_witholding}").grid(row=6, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Bills:").grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.expenses.bills}").grid(row=7, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Annual Expenses:").grid(row=8, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.expenses.annual_expenses}").grid(row=8, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Total Expenses:", font=bold_font).grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.expenses.get_total_expenses()}", font=bold_font).grid(row=9, column=1, padx=5, pady=5, sticky="w")
+
+        # Net Section
+        tk.Label(self.master, text="Net", font=section_font).grid(row=10, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text="Other Income:").grid(row=11, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.other_income}").grid(row=11, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Operating Income:").grid(row=12, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.sales.get_gross_profits() - self.income_statement.expenses.get_total_expenses()}").grid(row=12, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Income Taxes:").grid(row=13, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.income_taxes}").grid(row=13, column=1, padx=5, pady=5, sticky="w")
+
+        tk.Label(self.master, text="Net Income:", font=bold_font).grid(row=14, column=0, padx=5, pady=5, sticky="w")
+        tk.Label(self.master, text=f"${self.income_statement.net_income}", font=bold_font).grid(row=14, column=1, padx=5, pady=5, sticky="w")
+
 
 class GUI:
     def __init__(self, master):
@@ -240,8 +368,11 @@ class GUI:
         self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
         self.create_invoice_button.pack(pady=10)
 
-        self.calculate_button = ttk.Button(master, text="Calculate", command=self.calculate)
-        self.calculate_button.pack(pady=10)
+        self.view_balance_sheet_button = ttk.Button(master, text="Show Balance Sheet", command=self.open_balance_sheet_popup)
+        self.view_balance_sheet_button.pack(pady=10)
+
+        self.view_income_statement_button = ttk.Button(master, text="Show Income Statement", command=self.open_income_statement_popup)
+        self.view_income_statement_button.pack(pady=10)
 
         self.result_label = ttk.Label(master, text="")
         self.result_label.pack(pady=10)
@@ -258,7 +389,16 @@ class GUI:
 
         # Load initial data
         # self.load_data()
+    
+    def open_balance_sheet_popup(self):
+        popup = tk.Toplevel(self.master)
+        popup.title("Balance Sheet")
+        BalanceSheetPopup(popup, self.company.balance_sheet)
 
+    def open_income_statement_popup(self):
+        popup = tk.Toplevel(self.master)
+        popup.title("Income Statement Sheet")
+        IncomeStatementPopup(popup, self.company.income_statement)
 
     def open_payment_popup(self):
         popup = tk.Toplevel(self.master)
@@ -383,20 +523,6 @@ class GUI:
     def view_vendors(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Vendors")
 
-    def view_inventory(self):
-        ViewDatabasePopup(self.master, self.company.cursor, "Inventory")
-
-
-
-
-
-
-
-
-
-
-
-
     def add_inventory_item(self):
         inventory_window = tk.Toplevel(self.master)
         inventory_window.title("Add Inventory Item")
@@ -418,47 +544,13 @@ class GUI:
         item_unit_price_entry.pack()
 
         tk.Button(inventory_window, text="Add Customer", command=lambda: self.save_customer(item_name_entry.get(), item_id_entry.get())).pack()
-        
+
     def save_inventory(self, name, item_id, quantity, unit_price):
         # Save customer details to database or perform other operations
         messagebox.showinfo("Success", f"{quantity} items of {name} with ID {item_id} at ${unit_price} each added successfully.")
-
-    # def add_inventory_item(self):
-    #     # name = input("Enter item name: ")
-    #     # quantity = int(input("Enter quantity: "))
-    #     # unit_price = float(input("Enter unit price: "))
-    #     # item = InventoryItem(name, quantity, unit_price)
-    #     self.company.add_inventory_item(item)
-    #     self.load_data()
-
-    def calculate(self):
-        income_statement = self.company.calculate_income_statement()
-        balance_sheet = self.company.calculate_balance_sheet()
-
-        result_text = f"Income Statement: {income_statement}\nBalance Sheet: {balance_sheet}"
-        self.result_label.config(text=result_text)
-
-    def load_data(self):
-        # Clear existing data
-        self.employee_listbox.delete(0, tk.END)
-        self.customer_listbox.delete(0, tk.END)
-        self.inventory_listbox.delete(0, tk.END)
-
-        # Load employee data
-        employees = self.company.get_employees()
-        for employee in employees:
-            self.employee_listbox.insert(tk.END, f"{employee[0]} - {employee[1]}")
-
-        # Load customer data
-        customers = self.company.get_customers()
-        for customer in customers:
-            self.customer_listbox.insert(tk.END, customer[0])
-
-        # Load inventory item data
-        inventory_items = self.company.get_inventory_items()
-        for item in inventory_items:
-            self.inventory_listbox.insert(tk.END, f"{item[0]} - {item[1]} - {item[2]}")
-
+    
+    def view_inventory(self):
+        ViewDatabasePopup(self.master, self.company.cursor, "Inventory")
 
 if __name__ == "__main__":
     root = tk.Tk()
