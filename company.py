@@ -10,6 +10,7 @@ from inventory_item import InventoryItem
 from balance_sheet import BalanceSheet, Assets, Liabilities
 from income_statement import IncomeStatement, Sales, Expenses
 
+import datetime
 
 class Company:
     def __init__(self, name, database_path="company_database.db"):
@@ -19,8 +20,10 @@ class Company:
         self.cursor = self.connection.cursor()
         self.create_tables()
 
+        self.cost_of_items_sold = 100
+        self.units_in_stock = 500 # TODO update based on inventory
 
-        self.assets = Assets(200000, 0, 0, 0, 0, 0)
+        self.assets = Assets(200000, 0, 10000000, 0, 0, 0)
         self.liabilities = Liabilities(0, 0, 0, 0)
         self.balance_sheet = BalanceSheet(self.assets, self.liabilities)
 
@@ -77,6 +80,15 @@ class Company:
                            UNIT_PRICE REAL,
                            QUANTITY INTEGER, 
                            VALUE REAL)''')
+        
+    
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS InvoiceHistory (
+                                InvoiceNumber INTEGER PRIMARY KEY AUTOINCREMENT,
+                                Date TEXT,
+                                Customer TEXT,
+                                Quantity INTEGER,
+                                PricePerPart REAL,
+                                Total REAL)''')
 
         self.connection.commit()
     
@@ -101,10 +113,11 @@ class Company:
         # return get_database("Employees")
 
     def add_customer(self, customer):
-        price = float(customer.price) if customer.price else ''
+        # price = float(customer.price) if customer.price else ''
+        default_initial_price = 100
         self.cursor.execute("INSERT INTO Customers (COMPANY_NAME, FIRST_NAME, LAST_NAME, ADDRESS1, ADDRESS2, CITY, STATE, ZIPCODE, PRICE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", 
                             (customer.company_name,customer.first_name, customer.last_name, customer.address1, customer.address2,
-                              customer.city, customer.state, customer.zipcode, price))
+                              customer.city, customer.state, customer.zipcode, default_initial_price))
         self.connection.commit()
     
     def get_customers(self):
@@ -140,24 +153,53 @@ class Company:
         self.cursor.execute("SELECT * FROM Inventory")
         return self.cursor.fetchall()
 
-    def calculate_income_statement(self):
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT SUM(salary) FROM employees")
-        total_income = cursor.fetchone()[0] or 0  # Handle None if no records found
+    def pay_employee(self, salary):
+        current_asset = self.assets
+        new_assets = Assets(current_asset.cash - salary, 
+                 current_asset.accounts_recv,
+                 current_asset.inventory,
+                 current_asset.land_buildings,
+                 current_asset.equipment,
+                 current_asset.furniture_fixtures)
+        self.balance_sheet.update_assets(new_assets)
 
-        cursor.execute("SELECT SUM(quantity * unit_price) FROM inventory")
-        total_expenses = cursor.fetchone()[0] or 0  # Handle None if no records found
+        current_expense = self.expenses
+        new_expenses = Expenses(current_expense.payroll + salary, 
+                 current_expense.payroll_witholding,
+                 current_expense.bills,
+                 current_expense.annual_expenses)
+        self.income_statement.update_expenses(new_expenses)
 
-        net_income = total_income - total_expenses
-        return net_income
+    def invoice_customer(self, customer_company_name, num_purchased):
+        amount_to_invoice = num_purchased * self.cost_of_items_sold
+        current_asset = self.assets
+        new_assets = Assets(current_asset.cash, 
+                 current_asset.accounts_recv + amount_to_invoice,
+                 current_asset.inventory,
+                 current_asset.land_buildings,
+                 current_asset.equipment,
+                 current_asset.furniture_fixtures)
+        self.balance_sheet.update_assets(new_assets)
 
-    def calculate_balance_sheet(self):
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT SUM(quantity * unit_price) FROM inventory")
-        total_assets = cursor.fetchone()[0] or 0  # Handle None if no records found
+        current_sales = self.sales
+        new_sales = Sales(current_sales.sales + amount_to_invoice,
+                          current_sales.cost_of_goods) 
+        self.income_statement.update_sales(new_sales)
 
-        cursor.execute("SELECT SUM(salary) FROM employees")
-        total_liabilities = cursor.fetchone()[0] or 0  # Handle None if no records found
+        self.units_in_stock -= num_purchased
 
-        equity = total_assets - total_liabilities
-        return equity
+        # Update the PRICE field in the Customers table for the selected customer
+        self.cursor.execute("UPDATE Customers SET PRICE = PRICE + ? WHERE COMPANY_NAME=?", (amount_to_invoice, customer_company_name))
+        # Commit the transaction to save the changes
+        self.connection.commit()
+
+        print(f"Price for customer {customer_company_name} incremented by {amount_to_invoice}.")
+
+        self.cursor.execute("INSERT INTO InvoiceHistory (Date, Customer, Quantity, PricePerPart, Total) VALUES (?, ?, ?, ?, ?)", 
+                            (self.get_date(),customer_company_name, num_purchased, self.cost_of_items_sold, amount_to_invoice))
+        self.connection.commit()
+
+    def get_date(self):
+        current_date = datetime.date.today()
+        current_date = current_date.strftime("%Y-%m-%d")
+        return current_date

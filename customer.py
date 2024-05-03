@@ -7,8 +7,7 @@ class Customer:
                  address2,
                  city,
                  state,
-                 zipcode,
-                 price):
+                 zipcode):
         self.company_name = company_name
         self.first_name = first_name
         self.last_name = last_name
@@ -17,4 +16,5 @@ class Customer:
         self.city = city
         self.state = state
         self.zipcode = zipcode
-        self.price = price
+        default_initial_price_purchased = 100
+        self.price = default_initial_price_purchased

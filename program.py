@@ -10,7 +10,6 @@ from employee import Employee
 from customer import Customer
 from vendor import Vendor
 from inventory_item import InventoryItem
-from balance_sheet import BalanceSheet, Assets, Liabilities
 
 class ViewDatabasePopup:
     def __init__(self, master, cursor, table_name):
@@ -54,9 +53,10 @@ class ViewDatabasePopup:
         return column_names
     
 class EmployeePaymentPopup:
-    def __init__(self, master, cursor):
+    def __init__(self, master, cursor, company):
         self.master = master
         self.cursor = cursor
+        self.company = company
 
         # Create a dropdown menu to select the employee
         self.selected_employee = tk.StringVar()
@@ -74,16 +74,22 @@ class EmployeePaymentPopup:
         self.employee_dropdown['values'] = employees
 
     def pay_employee(self, selected_employee):
-        # TODO change balance sheets and stuff: add logic to pay the selected employee
-        # TODO 
-            # i. Update the balance sheet based on the cash outflow shown on the
-            #    employee listing sheet
-            # ii. Update the income statement based on the cash outflow shown on
-            #     the employee listing sheet
-            # iii. Document the history of payroll events
-
+        # i. Update the balance sheet based on the cash outflow shown on the
+        #    employee listing sheet
+        # ii. Update the income statement based on the cash outflow shown on
+        #     the employee listing sheet
+        # iii. Document the history of payroll events
         if selected_employee:
-            print(f"Paying employee: {selected_employee}")
+            # Split the selected employee name into first name and last name
+            first_name, last_name = selected_employee.split()
+
+            # Query the database to fetch the salary of the selected employee
+            self.cursor.execute("SELECT SALARY FROM Employees WHERE FIRST_NAME=? AND LAST_NAME=?", (first_name, last_name))
+            salary = self.cursor.fetchone()[0]  # Fetch the first row and the SALARY column value
+
+            self.company.pay_employee(salary)
+
+            print(f"Paying employee: {selected_employee}, Salary: {salary}")
         else:
             tk.messagebox.showwarning("No Employee Selected", "Please select an employee to pay.")
 
@@ -138,9 +144,10 @@ class PurchaseOrderPopup:
             messagebox.showwarning("Incomplete Information", "Please select an item and enter the quantity.")
 
 class InvoicePopup:
-    def __init__(self, master, cursor):
+    def __init__(self, master, cursor, company):
         self.master = master
         self.cursor = cursor
+        self.company = company
 
         # Dropdown menu to select a customer
         self.selected_customer = tk.StringVar()
@@ -169,27 +176,24 @@ class InvoicePopup:
     def display_current_units(self):
         # Add logic to fetch and display current units in stock
         # For demonstration purposes, just show a hardcoded value
-        units_in_stock = 100
-        self.units_label.config(text=f"Current Units in Stock: {units_in_stock}")
+        self.units_label.config(text=f"Current Units in Stock: {self.company.units_in_stock}")
 
     def create_invoice(self):
-        selected_customer = self.selected_customer.get()
+        selected_customer_company = self.selected_customer.get()
         units_to_invoice = self.units_entry.get()
 
-        if selected_customer and units_to_invoice:
+        if selected_customer_company and units_to_invoice:
             # Add logic to create the invoice and update databases
-            print(f"Creating invoice for {units_to_invoice} units for customer {selected_customer}")
+            print(f"Creating invoice for {units_to_invoice} units for customer {selected_customer_company}")
             # Update the balance sheet, income statement, and inventory databases
-            self.update_balance_sheet(selected_customer, units_to_invoice)
-            self.update_income_statement(units_to_invoice)
-            self.update_inventory(units_to_invoice)
-            messagebox.showinfo("Invoice Created", f"Invoice for {units_to_invoice} units created successfully for customer {selected_customer}.")
+            self.company.invoice_customer(selected_customer_company, int(units_to_invoice))
+            messagebox.showinfo("Invoice Created", f"Invoice for {units_to_invoice} units created successfully for customer {selected_customer_company}.")
         else:
             messagebox.showwarning("Incomplete Information", "Please select a customer and enter the number of units to invoice.")
 
-    def update_balance_sheet(self, customer, units):
+    def update_balance_sheet(self, units):
         # Add logic to update the balance sheet with receivables from the sale
-        pass
+        self.company.assets.update
 
     def update_income_statement(self, units):
         # Add logic to update the income statement with sales
@@ -368,6 +372,9 @@ class GUI:
         self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
         self.create_invoice_button.pack(pady=10)
 
+        self.invoice_history_button = ttk.Button(master, text="Invoice History", command=self.view_invoice_history)
+        self.invoice_history_button.pack(pady=10)
+
         self.view_balance_sheet_button = ttk.Button(master, text="Show Balance Sheet", command=self.open_balance_sheet_popup)
         self.view_balance_sheet_button.pack(pady=10)
 
@@ -403,7 +410,7 @@ class GUI:
     def open_payment_popup(self):
         popup = tk.Toplevel(self.master)
         popup.title("Pay Employee")
-        EmployeePaymentPopup(popup, self.company.cursor)
+        EmployeePaymentPopup(popup, self.company.cursor, self.company)
     
     def open_purchase_order_popup(self):
         popup = tk.Toplevel(self.master)
@@ -413,7 +420,7 @@ class GUI:
     def open_invoice_popup(self):
         popup = tk.Toplevel(self.master)
         popup.title("Create Invoice")
-        InvoicePopup(popup, self.company.cursor)
+        InvoicePopup(popup, self.company.cursor, self.company)
 
     def add_employee(self):
         employee_window = tk.Toplevel(self.master)
@@ -451,6 +458,9 @@ class GUI:
     def view_employees(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Employees")
     
+    def view_invoice_history(self):
+        ViewDatabasePopup(self.master, self.company.cursor, "InvoiceHistory")
+    
     def add_customer(self):
         customer_window = tk.Toplevel(self.master)
         customer_window.title("Add Customer")
@@ -462,8 +472,9 @@ class GUI:
                  "Address 2",
                  "City",
                  "State",
-                 "Zip Code",
-                 "Price Purchased"]
+                 "Zip Code"]
+        
+        # Price Purchased default $100 first
     
         attr_dict = {attr: None for attr in attrs}
 
@@ -518,7 +529,6 @@ class GUI:
         self.company.add_inventory_item(new_inventory_item)
         # self.load_data()
         messagebox.showinfo("Success", f"Vendor added successfully.")
-
 
     def view_vendors(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Vendors")

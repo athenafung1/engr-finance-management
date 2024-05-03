@@ -60,7 +60,7 @@ class BalanceSheet:
         self.assets = new_assets
         self.net_worth = self.calculate_net_worth()
 
-    def update_assets(self, new_liabilities):
+    def update_liabilities(self, new_liabilities):
         self.liabilities = new_liabilities
         self.net_worth = self.calculate_net_worth()
     
