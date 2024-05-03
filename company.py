@@ -60,7 +60,11 @@ class Company:
 
         # Create Inventory Table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS Inventory
-                          (ID INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, quantity INTEGER, unit_price REAL)''')
+                          (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+                           ITEM_NAME TEXT, 
+                           UNIT_PRICE REAL,
+                           QUANTITY INTEGER, 
+                           VALUE REAL)''')
 
         self.connection.commit()
     
@@ -112,16 +116,16 @@ class Company:
         employees = [f"{row[0]} {row[1]}" for row in self.cursor.fetchall()]
         return employees
 
-
     def add_inventory_item(self, item):
         # cursor = self.connection.cursor()
-        self.cursor.execute("INSERT INTO inventory (name, quantity, unit_price) VALUES (?, ?, ?)",
-                       (item.name, item.quantity, item.unit_price))
+        value = float(item.unit_price) * float(item.quantity)
+        self.cursor.execute("INSERT INTO Inventory (ITEM_NAME, UNIT_PRICE, QUANTITY, VALUE) VALUES (?, ?, ?, ?)",
+                       (item.item_name, item.unit_price, item.quantity, value))
         self.connection.commit()
 
     def get_inventory_items(self):
         # cursor = self.connection.cursor()
-        self.cursor.execute("SELECT name, quantity, unit_price FROM inventory")
+        self.cursor.execute("SELECT * FROM Inventory")
         return self.cursor.fetchall()
 
     def calculate_income_statement(self):

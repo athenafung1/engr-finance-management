@@ -1,91 +1,83 @@
-# import tkinter as tk
-# from tkinter import ttk
-# import sqlite3
-
-# class GUI:
-#     def __init__(self, master):
-#         self.master = master
-#         self.master.title("Dropdown Menu Example")
-
-#         self.connection = sqlite3.connect("your_database.db")
-#         self.cursor = self.connection.cursor()
-
-#         # Create a dropdown menu
-#         self.selected_value = tk.StringVar()
-#         self.dropdown = ttk.Combobox(master, textvariable=self.selected_value)
-#         self.dropdown.pack(pady=10)
-
-#         # Populate the dropdown menu with unique elements from a database column
-#         unique_values = self.get_unique_values("your_table", "your_column")
-#         self.dropdown['values'] = unique_values
-
-#         # Button to display the selected value
-#         self.button = ttk.Button(master, text="Display Selected Value", command=self.display_selected_value)
-#         self.button.pack(pady=10)
-
-#     def get_unique_values(self, table_name, column_name):
-#         self.cursor.execute(f"SELECT DISTINCT {column_name} FROM {table_name}")
-#         unique_values = self.cursor.fetchall()
-#         return [value[0] for value in unique_values]
-
-#     def display_selected_value(self):
-#         selected_value = self.selected_value.get()
-#         if selected_value:
-#             tk.messagebox.showinfo("Selected Value", f"The selected value is: {selected_value}")
-#         else:
-#             tk.messagebox.showwarning("No Value Selected", "Please select a value from the dropdown menu.")
-
-# if __name__ == "__main__":
-#     root = tk.Tk()
-#     app = GUI(root)
-#     root.mainloop()
-
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import sqlite3
 
-class EmployeePaymentPopup:
+class InvoicePopup:
     def __init__(self, master):
         self.master = master
-        self.master.title("Employee Payment")
+        self.master.title("Create Invoice")
         self.connection = sqlite3.connect("company_database.db")
         self.cursor = self.connection.cursor()
 
-        # Create a dropdown menu to select the employee
-        self.selected_employee = tk.StringVar()
-        self.employee_dropdown = ttk.Combobox(master, textvariable=self.selected_employee)
-        self.employee_dropdown.pack(pady=10)
-        self.populate_employee_dropdown()
+        # Dropdown menu to select a customer
+        self.selected_customer = tk.StringVar()
+        self.customer_dropdown = ttk.Combobox(master, textvariable=self.selected_customer)
+        self.customer_dropdown.pack(pady=10)
+        self.populate_customer_dropdown()
 
-        # Create a button to pay the selected employee
-        self.pay_button = ttk.Button(master, text="Pay Employee", command=lambda: self.pay_employee(self.selected_employee.get()))
-        self.pay_button.pack(pady=10)
+        # Display current units in stock
+        self.units_label = ttk.Label(master, text="Current Units in Stock:")
+        self.units_label.pack(pady=5)
+        self.display_current_units()
 
-    def populate_employee_dropdown(self):
-        self.cursor.execute("SELECT first_name, last_name FROM employees")
-        employees = [f"{row[0]} {row[1]}" for row in self.cursor.fetchall()]
-        self.employee_dropdown['values'] = employees
+        # Entry to enter the number of units to invoice
+        self.units_entry = ttk.Entry(master)
+        self.units_entry.pack(pady=5)
 
-    def pay_employee(self, selected_employee):
-        if selected_employee:
-            # Add logic to pay the selected employee
-            print(f"Paying employee: {selected_employee}")
-            # You can add further logic here to update the database or perform any other actions
+        # Button to confirm and create the invoice
+        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.create_invoice)
+        self.create_invoice_button.pack(pady=10)
+
+    def populate_customer_dropdown(self):
+        self.cursor.execute("SELECT COMPANY_NAME FROM Customers")
+        customers = [row[0] for row in self.cursor.fetchall()]
+        self.customer_dropdown['values'] = customers
+
+    def display_current_units(self):
+        # Add logic to fetch and display current units in stock
+        # For demonstration purposes, just show a hardcoded value
+        units_in_stock = 100
+        self.units_label.config(text=f"Current Units in Stock: {units_in_stock}")
+
+    def create_invoice(self):
+        selected_customer = self.selected_customer.get()
+        units_to_invoice = self.units_entry.get()
+
+        if selected_customer and units_to_invoice:
+            # Add logic to create the invoice and update databases
+            print(f"Creating invoice for {units_to_invoice} units for customer {selected_customer}")
+            # Update the balance sheet, income statement, and inventory databases
+            self.update_balance_sheet(selected_customer, units_to_invoice)
+            self.update_income_statement(units_to_invoice)
+            self.update_inventory(units_to_invoice)
+            messagebox.showinfo("Invoice Created", f"Invoice for {units_to_invoice} units created successfully for customer {selected_customer}.")
         else:
-            tk.messagebox.showwarning("No Employee Selected", "Please select an employee to pay.")
+            messagebox.showwarning("Incomplete Information", "Please select a customer and enter the number of units to invoice.")
+
+    def update_balance_sheet(self, customer, units):
+        # Add logic to update the balance sheet with receivables from the sale
+        pass
+
+    def update_income_statement(self, units):
+        # Add logic to update the income statement with sales
+        pass
+
+    def update_inventory(self, units):
+        # Add logic to update the inventory to reflect the sale of complete units
+        pass
 
 class GUI:
     def __init__(self, master):
         self.master = master
         self.master.title("Main GUI")
 
-        # Create a button to open the employee payment popup
-        self.pay_button = ttk.Button(master, text="Pay Employee", command=self.open_payment_popup)
-        self.pay_button.pack(pady=10)
+        # Create a button to open the invoice popup
+        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
+        self.create_invoice_button.pack(pady=10)
 
-    def open_payment_popup(self):
+    def open_invoice_popup(self):
         popup = tk.Toplevel(self.master)
-        employee_payment_popup = EmployeePaymentPopup(popup)
+        invoice_popup = InvoicePopup(popup)
 
 if __name__ == "__main__":
     root = tk.Tk()

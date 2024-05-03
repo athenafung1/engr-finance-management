@@ -74,10 +74,130 @@ class EmployeePaymentPopup:
 
     def pay_employee(self, selected_employee):
         # TODO change balance sheets and stuff: add logic to pay the selected employee
+        # TODO 
+            # i. Update the balance sheet based on the cash outflow shown on the
+            #    employee listing sheet
+            # ii. Update the income statement based on the cash outflow shown on
+            #     the employee listing sheet
+            # iii. Document the history of payroll events
+
         if selected_employee:
             print(f"Paying employee: {selected_employee}")
         else:
             tk.messagebox.showwarning("No Employee Selected", "Please select an employee to pay.")
+
+class PurchaseOrderPopup:
+    def __init__(self, master, cursor):
+        self.master = master
+        self.cursor = cursor
+
+        # Check if the inventory database is empty
+        self.cursor.execute("SELECT COUNT(*) FROM Inventory")
+        count = self.cursor.fetchone()[0]
+        
+        # Dropdown menu to select an existing inventory item
+        self.selected_item = tk.StringVar()
+        self.item_dropdown = ttk.Combobox(master, textvariable=self.selected_item)
+        self.item_dropdown.pack(pady=10)
+        self.populate_item_dropdown()
+
+        # Entry to enter the quantity of items desired
+        self.quantity_label = ttk.Label(master, text="Quantity:")
+        self.quantity_label.pack(side=tk.LEFT, padx=5, pady=5)
+        self.quantity_entry = ttk.Entry(master)
+        self.quantity_entry.pack(side=tk.LEFT, padx=5, pady=5)
+
+        # Button to confirm and create the purchase order
+        self.create_po_button = ttk.Button(master, text="Create Purchase Order", command=self.create_purchase_order)
+        self.create_po_button.pack(pady=10)
+
+    def populate_item_dropdown(self):
+        self.cursor.execute("SELECT ITEM_NAME FROM Inventory")
+        items = [row[0] for row in self.cursor.fetchall()]
+        self.item_dropdown['values'] = items
+
+    # def create_new_item(self):
+    #     # Add logic to create a new inventory item
+    #     # For demonstration purposes, just show a messagebox
+    #     messagebox.showinfo("Create New Item", "Functionality to create a new item will be implemented here.")
+
+    def create_purchase_order(self):
+        selected_item = self.selected_item.get()
+        quantity = self.quantity_entry.get()
+
+        if selected_item and quantity:
+            # Add logic to create the purchase order and update databases
+            print(f"Creating purchase order for {quantity} units of {selected_item}")
+            # Update the balance sheet, inventory, and purchase order history databases
+            # self.update_balance_sheet(selected_item, quantity)
+            # self.update_inventory(selected_item, quantity)
+            # self.update_purchase_order_history(selected_item, quantity)
+            messagebox.showinfo("Purchase Order Created", f"Purchase order for {quantity} units of {selected_item} created successfully.")
+        else:
+            messagebox.showwarning("Incomplete Information", "Please select an item and enter the quantity.")
+
+class InvoicePopup:
+    def __init__(self, master, cursor):
+        self.master = master
+        self.cursor = cursor
+
+        # Dropdown menu to select a customer
+        self.selected_customer = tk.StringVar()
+        self.customer_dropdown = ttk.Combobox(master, textvariable=self.selected_customer)
+        self.customer_dropdown.pack(pady=10)
+        self.populate_customer_dropdown()
+
+        # Display current units in stock
+        self.units_label = ttk.Label(master, text="Current Units in Stock:")
+        self.units_label.pack(pady=5)
+        self.display_current_units()
+
+        # Entry to enter the number of units to invoice
+        self.units_entry = ttk.Entry(master)
+        self.units_entry.pack(pady=5)
+
+        # Button to confirm and create the invoice
+        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.create_invoice)
+        self.create_invoice_button.pack(pady=10)
+
+    def populate_customer_dropdown(self):
+        self.cursor.execute("SELECT COMPANY_NAME FROM Customers")
+        customers = [row[0] for row in self.cursor.fetchall()]
+        self.customer_dropdown['values'] = customers
+
+    def display_current_units(self):
+        # Add logic to fetch and display current units in stock
+        # For demonstration purposes, just show a hardcoded value
+        units_in_stock = 100
+        self.units_label.config(text=f"Current Units in Stock: {units_in_stock}")
+
+    def create_invoice(self):
+        selected_customer = self.selected_customer.get()
+        units_to_invoice = self.units_entry.get()
+
+        if selected_customer and units_to_invoice:
+            # Add logic to create the invoice and update databases
+            print(f"Creating invoice for {units_to_invoice} units for customer {selected_customer}")
+            # Update the balance sheet, income statement, and inventory databases
+            self.update_balance_sheet(selected_customer, units_to_invoice)
+            self.update_income_statement(units_to_invoice)
+            self.update_inventory(units_to_invoice)
+            messagebox.showinfo("Invoice Created", f"Invoice for {units_to_invoice} units created successfully for customer {selected_customer}.")
+        else:
+            messagebox.showwarning("Incomplete Information", "Please select a customer and enter the number of units to invoice.")
+
+    def update_balance_sheet(self, customer, units):
+        # Add logic to update the balance sheet with receivables from the sale
+        pass
+
+    def update_income_statement(self, units):
+        # Add logic to update the income statement with sales
+        pass
+
+    def update_inventory(self, units):
+        # Add logic to update the inventory to reflect the sale of complete units
+        pass
+
 
 class GUI:
     def __init__(self, master):
@@ -93,6 +213,10 @@ class GUI:
         self.view_employee_button = ttk.Button(master, text="View Employees", command=self.view_employees)
         self.view_employee_button.pack(pady=10)
 
+        # Create a button to open the employee payment popup
+        self.pay_employee_button = ttk.Button(master, text="Pay An Employee", command=self.open_payment_popup)
+        self.pay_employee_button.pack(pady=10)
+
         self.customer_button = ttk.Button(master, text="Add Customer", command=self.add_customer)
         self.customer_button.pack(pady=10)
 
@@ -105,12 +229,16 @@ class GUI:
         self.view_vendor_button = ttk.Button(master, text="View Vendors", command=self.view_vendors)
         self.view_vendor_button.pack(pady=10)
 
-        # Create a button to open the employee payment popup
-        self.pay_employee_button = ttk.Button(master, text="Pay An Employee", command=self.open_payment_popup)
-        self.pay_employee_button.pack(pady=10)
+        self.view_inventory_button = ttk.Button(master, text="View Inventory", command=self.view_inventory)
+        self.view_inventory_button.pack(pady=10)
 
-        # self.inventory_button = ttk.Button(master, text="Add Inventory Item", command=self.add_inventory_item)
-        # self.inventory_button.pack(pady=10)
+        # Create a button to open the purchase order popup
+        self.create_purchase_order_button = ttk.Button(master, text="Create Purchase Order", command=self.open_purchase_order_popup)
+        self.create_purchase_order_button.pack(pady=10)
+        
+        # Create a button to open the invoice popup
+        self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
+        self.create_invoice_button.pack(pady=10)
 
         self.calculate_button = ttk.Button(master, text="Calculate", command=self.calculate)
         self.calculate_button.pack(pady=10)
@@ -119,24 +247,33 @@ class GUI:
         self.result_label.pack(pady=10)
 
         # Display data in Listboxes
-        self.employee_listbox = Listbox(master)
-        self.employee_listbox.pack(pady=10)
+        # self.employee_listbox = Listbox(master)
+        # self.employee_listbox.pack(pady=10)
 
-        self.customer_listbox = Listbox(master)
-        self.customer_listbox.pack(pady=10)
+        # self.customer_listbox = Listbox(master)
+        # self.customer_listbox.pack(pady=10)
 
-        self.inventory_listbox = Listbox(master)
-        self.inventory_listbox.pack(pady=10)
+        # self.inventory_listbox = Listbox(master)
+        # self.inventory_listbox.pack(pady=10)
 
         # Load initial data
-        self.load_data()
+        # self.load_data()
 
 
     def open_payment_popup(self):
         popup = tk.Toplevel(self.master)
         popup.title("Pay Employee")
         EmployeePaymentPopup(popup, self.company.cursor)
+    
+    def open_purchase_order_popup(self):
+        popup = tk.Toplevel(self.master)
+        popup.title("Create Purchase Order")
+        PurchaseOrderPopup(popup, self.company.cursor)
 
+    def open_invoice_popup(self):
+        popup = tk.Toplevel(self.master)
+        popup.title("Create Invoice")
+        InvoicePopup(popup, self.company.cursor)
 
     def add_employee(self):
         employee_window = tk.Toplevel(self.master)
@@ -168,7 +305,7 @@ class GUI:
         employee_data = [entry.get() for entry in attr_dict.values()]
         new_employee = Employee(*employee_data)
         self.company.add_employee(new_employee)
-        self.load_data()
+        # self.load_data()
         messagebox.showinfo("Success", f"Employee {new_employee.first_name} {new_employee.last_name} added successfully.")
         
     def view_employees(self):
@@ -203,7 +340,7 @@ class GUI:
         customer_data = [entry.get() for entry in attr_dict.values()]
         new_customer = Customer(*customer_data)
         self.company.add_customer(new_customer)
-        self.load_data()
+        # self.load_data()
         messagebox.showinfo("Success", f"Customer added successfully.")
     
     def view_customers(self):
@@ -237,12 +374,17 @@ class GUI:
         vendor_data = [entry.get() for entry in attr_dict.values()]
         new_vendor = Vendor(*vendor_data)
         self.company.add_vendor(new_vendor)
-        self.load_data()
+        new_inventory_item = InventoryItem(new_vendor.item_name, new_vendor.price_per_unit, 0)
+        self.company.add_inventory_item(new_inventory_item)
+        # self.load_data()
         messagebox.showinfo("Success", f"Vendor added successfully.")
-    
+
+
     def view_vendors(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Vendors")
 
+    def view_inventory(self):
+        ViewDatabasePopup(self.master, self.company.cursor, "Inventory")
 
 
 
