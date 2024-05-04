@@ -76,6 +76,7 @@ class Company:
         # Create Inventory Table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS Inventory
                           (ID INTEGER PRIMARY KEY AUTOINCREMENT, 
+                           SUPPLIER TEXT,
                            ITEM_NAME TEXT, 
                            UNIT_PRICE REAL,
                            QUANTITY INTEGER, 
@@ -89,7 +90,15 @@ class Company:
                                 Quantity INTEGER,
                                 PricePerPart REAL,
                                 Total REAL)''')
-
+        
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS PurchaseOrderHistory (
+                                PurchaseOrderNumber INTEGER PRIMARY KEY AUTOINCREMENT,
+                                Date TEXT,
+                                Supplier TEXT,
+                                ItemName TEXT,
+                                Quantity INTEGER,
+                                UnitPrice REAL,
+                                Total REAL)''')
         self.connection.commit()
     
     def get_database(self, database_name):
@@ -144,8 +153,8 @@ class Company:
     def add_inventory_item(self, item):
         # cursor = self.connection.cursor()
         value = float(item.unit_price) * float(item.quantity)
-        self.cursor.execute("INSERT INTO Inventory (ITEM_NAME, UNIT_PRICE, QUANTITY, VALUE) VALUES (?, ?, ?, ?)",
-                       (item.item_name, item.unit_price, item.quantity, value))
+        self.cursor.execute("INSERT INTO Inventory (SUPPLIER, ITEM_NAME, UNIT_PRICE, QUANTITY, VALUE) VALUES (?, ?, ?, ?, ?)",
+                       (item.supplier, item.item_name, item.unit_price, item.quantity, value))
         self.connection.commit()
 
     def get_inventory_items(self):
@@ -154,13 +163,13 @@ class Company:
         return self.cursor.fetchall()
 
     def pay_employee(self, salary):
-        current_asset = self.assets
-        new_assets = Assets(current_asset.cash - salary, 
-                 current_asset.accounts_recv,
-                 current_asset.inventory,
-                 current_asset.land_buildings,
-                 current_asset.equipment,
-                 current_asset.furniture_fixtures)
+        current_assets = self.assets
+        new_assets = Assets(current_assets.cash - salary, 
+                 current_assets.accounts_recv,
+                 current_assets.inventory,
+                 current_assets.land_buildings,
+                 current_assets.equipment,
+                 current_assets.furniture_fixtures)
         self.balance_sheet.update_assets(new_assets)
 
         current_expense = self.expenses
@@ -172,13 +181,13 @@ class Company:
 
     def invoice_customer(self, customer_company_name, num_purchased):
         amount_to_invoice = num_purchased * self.cost_of_items_sold
-        current_asset = self.assets
-        new_assets = Assets(current_asset.cash, 
-                 current_asset.accounts_recv + amount_to_invoice,
-                 current_asset.inventory,
-                 current_asset.land_buildings,
-                 current_asset.equipment,
-                 current_asset.furniture_fixtures)
+        current_assets = self.assets
+        new_assets = Assets(current_assets.cash, 
+                 current_assets.accounts_recv + amount_to_invoice,
+                 current_assets.inventory,
+                 current_assets.land_buildings,
+                 current_assets.equipment,
+                 current_assets.furniture_fixtures)
         self.balance_sheet.update_assets(new_assets)
 
         current_sales = self.sales
@@ -197,6 +206,42 @@ class Company:
 
         self.cursor.execute("INSERT INTO InvoiceHistory (Date, Customer, Quantity, PricePerPart, Total) VALUES (?, ?, ?, ?, ?)", 
                             (self.get_date(),customer_company_name, num_purchased, self.cost_of_items_sold, amount_to_invoice))
+        self.connection.commit()
+
+    def purchase_inventory_item(self, selected_item, quantity):
+        # Query the database to fetch the unit price of the selected item
+        self.cursor.execute("SELECT UNIT_PRICE FROM Inventory WHERE ITEM_NAME=?", (selected_item,))
+        unit_price = self.cursor.fetchone()[0]  # Fetch the first row and the UNIT_PRICE column value
+
+        total_purchase_price = quantity * unit_price
+
+        current_assets = self.assets
+        new_assets = Assets(current_assets.cash, 
+                 current_assets.accounts_recv,
+                 current_assets.inventory + total_purchase_price,
+                 current_assets.land_buildings,
+                 current_assets.equipment,
+                 current_assets.furniture_fixtures)
+        self.balance_sheet.update_assets(new_assets)
+
+        current_liabilities = self.liabilities
+        new_liability = Liabilities(current_liabilities.accounts_payable + total_purchase_price,
+                                    current_liabilities.notes_payable,
+                                    current_liabilities.accruals,
+                                    current_liabilities.mortgage)
+        self.balance_sheet.update_liabilities(new_liability)
+
+        # Update the PRICE field in the Customers table for the selected customer
+        self.cursor.execute("UPDATE Inventory SET QUANTITY = QUANTITY + ?, VALUE = VALUE + ? WHERE ITEM_NAME=?", (quantity, total_purchase_price, selected_item))
+        # Commit the transaction to save the changes
+        self.connection.commit()
+
+        # Query the database to fetch the company name associated with the given item name
+        self.cursor.execute("SELECT SUPPLIER FROM Inventory WHERE ITEM_NAME=?", (selected_item,))
+        supplier = self.cursor.fetchone()[0]  # Fetch the first row and the COMPANY_NAME column value
+
+        self.cursor.execute("INSERT INTO PurchaseOrderHistory (Date, Supplier, Quantity, UnitPrice, Total) VALUES (?, ?, ?, ?, ?)", 
+                            (self.get_date(), supplier, quantity, unit_price, total_purchase_price))
         self.connection.commit()
 
     def get_date(self):

@@ -94,9 +94,10 @@ class EmployeePaymentPopup:
             tk.messagebox.showwarning("No Employee Selected", "Please select an employee to pay.")
 
 class PurchaseOrderPopup:
-    def __init__(self, master, cursor):
+    def __init__(self, master, cursor, company):
         self.master = master
         self.cursor = cursor
+        self.company = company
 
         # Check if the inventory database is empty
         self.cursor.execute("SELECT COUNT(*) FROM Inventory")
@@ -123,11 +124,6 @@ class PurchaseOrderPopup:
         items = [row[0] for row in self.cursor.fetchall()]
         self.item_dropdown['values'] = items
 
-    # def create_new_item(self):
-    #     # Add logic to create a new inventory item
-    #     # For demonstration purposes, just show a messagebox
-    #     messagebox.showinfo("Create New Item", "Functionality to create a new item will be implemented here.")
-
     def create_purchase_order(self):
         selected_item = self.selected_item.get()
         quantity = self.quantity_entry.get()
@@ -139,6 +135,7 @@ class PurchaseOrderPopup:
             # self.update_balance_sheet(selected_item, quantity)
             # self.update_inventory(selected_item, quantity)
             # self.update_purchase_order_history(selected_item, quantity)
+            self.company.purchase_inventory_item(selected_item, int(quantity))
             messagebox.showinfo("Purchase Order Created", f"Purchase order for {quantity} units of {selected_item} created successfully.")
         else:
             messagebox.showwarning("Incomplete Information", "Please select an item and enter the quantity.")
@@ -367,6 +364,9 @@ class GUI:
         # Create a button to open the purchase order popup
         self.create_purchase_order_button = ttk.Button(master, text="Create Purchase Order", command=self.open_purchase_order_popup)
         self.create_purchase_order_button.pack(pady=10)
+
+        self.purchase_order_history = ttk.Button(master, text="Purchase Order History", command=self.view_purchase_order)
+        self.purchase_order_history.pack(pady=10)
         
         # Create a button to open the invoice popup
         self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
@@ -415,7 +415,7 @@ class GUI:
     def open_purchase_order_popup(self):
         popup = tk.Toplevel(self.master)
         popup.title("Create Purchase Order")
-        PurchaseOrderPopup(popup, self.company.cursor)
+        PurchaseOrderPopup(popup, self.company.cursor, self.company)
 
     def open_invoice_popup(self):
         popup = tk.Toplevel(self.master)
@@ -460,6 +460,9 @@ class GUI:
     
     def view_invoice_history(self):
         ViewDatabasePopup(self.master, self.company.cursor, "InvoiceHistory")
+    
+    def view_purchase_order(self):
+        ViewDatabasePopup(self.master, self.company.cursor, "PurchaseOrderHistory")
     
     def add_customer(self):
         customer_window = tk.Toplevel(self.master)
@@ -525,7 +528,7 @@ class GUI:
         vendor_data = [entry.get() for entry in attr_dict.values()]
         new_vendor = Vendor(*vendor_data)
         self.company.add_vendor(new_vendor)
-        new_inventory_item = InventoryItem(new_vendor.item_name, new_vendor.price_per_unit, 0)
+        new_inventory_item = InventoryItem(new_vendor.company_name, new_vendor.item_name, new_vendor.price_per_unit, 0)
         self.company.add_inventory_item(new_inventory_item)
         # self.load_data()
         messagebox.showinfo("Success", f"Vendor added successfully.")
@@ -533,32 +536,6 @@ class GUI:
     def view_vendors(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Vendors")
 
-    def add_inventory_item(self):
-        inventory_window = tk.Toplevel(self.master)
-        inventory_window.title("Add Inventory Item")
-
-        tk.Label(inventory_window, text="Item Name:").pack()
-        item_name_entry = tk.Entry(inventory_window)
-        item_name_entry.pack()
-
-        tk.Label(inventory_window, text="Item :").pack()
-        item_id_entry = tk.Entry(inventory_window)
-        item_id_entry.pack()
-
-        tk.Label(inventory_window, text="Quantity:").pack() # int
-        item_quantity_entry = tk.Entry(inventory_window)
-        item_quantity_entry.pack()
-
-        tk.Label(inventory_window, text="Unit Price:").pack() # float
-        item_unit_price_entry = tk.Entry(inventory_window)
-        item_unit_price_entry.pack()
-
-        tk.Button(inventory_window, text="Add Customer", command=lambda: self.save_customer(item_name_entry.get(), item_id_entry.get())).pack()
-
-    def save_inventory(self, name, item_id, quantity, unit_price):
-        # Save customer details to database or perform other operations
-        messagebox.showinfo("Success", f"{quantity} items of {name} with ID {item_id} at ${unit_price} each added successfully.")
-    
     def view_inventory(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Inventory")
 
