@@ -1,3 +1,5 @@
+import copy
+
 class Sales:
     def __init__(self, 
                  sales, 
@@ -38,10 +40,10 @@ class IncomeStatement:
         return net_income
     
     def update_sales(self, new_sales):
-        self.sales = new_sales
+        self.sales = copy.deepcopy(new_sales)
         self.net_income = self.calculate_net_income()
 
     def update_expenses(self, new_expenses):
-        self.expenses = new_expenses
+        self.expenses = copy.deepcopy(new_expenses)
         self.net_income = self.calculate_net_income()
     

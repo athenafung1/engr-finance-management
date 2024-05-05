@@ -1,3 +1,5 @@
+import copy
+
 class Assets:
     def __init__(self, 
                  cash, 
@@ -57,10 +59,10 @@ class BalanceSheet:
         return net_worth
     
     def update_assets(self, new_assets):
-        self.assets = new_assets
+        self.assets = copy.deepcopy(new_assets)
         self.net_worth = self.calculate_net_worth()
 
     def update_liabilities(self, new_liabilities):
-        self.liabilities = new_liabilities
+        self.liabilities = copy.deepcopy(new_liabilities)
         self.net_worth = self.calculate_net_worth()
     

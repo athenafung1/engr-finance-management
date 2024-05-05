@@ -21,14 +21,15 @@ class Company:
         self.create_tables()
 
         self.cost_of_items_sold = 100
-        self.units_in_stock = 500 # TODO update based on inventory
+        self.units_in_stock = 1000
+        self.cost_of_producing_item = 1
 
-        self.assets = Assets(200000, 0, 10000000, 0, 0, 0)
+        self.assets = Assets(200000, 0, 50000, 0, 0, 0)
         self.liabilities = Liabilities(0, 0, 0, 0)
         self.balance_sheet = BalanceSheet(self.assets, self.liabilities)
 
-        self.sales = Sales(50000, 100)
-        self.expenses = Expenses(20000, 0, 10000, 15000)
+        self.sales = Sales(0, 0)
+        self.expenses = Expenses(0, 0, 0, 100)
         self.other_income = 0
         self.income_taxes = 0
         self.income_statement = IncomeStatement(self.sales, self.expenses, self.other_income, self.income_taxes)
@@ -191,8 +192,9 @@ class Company:
         self.balance_sheet.update_assets(new_assets)
 
         current_sales = self.sales
+        cost_of_production = self.cost_of_producing_item * num_purchased
         new_sales = Sales(current_sales.sales + amount_to_invoice,
-                          current_sales.cost_of_goods) 
+                          current_sales.cost_of_goods + cost_of_production) 
         self.income_statement.update_sales(new_sales)
 
         self.units_in_stock -= num_purchased
@@ -216,6 +218,7 @@ class Company:
         total_purchase_price = quantity * unit_price
 
         current_assets = self.assets
+        print("tEST: ", current_assets.accounts_recv)
         new_assets = Assets(current_assets.cash, 
                  current_assets.accounts_recv,
                  current_assets.inventory + total_purchase_price,

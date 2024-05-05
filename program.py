@@ -337,49 +337,49 @@ class GUI:
 
         # GUI Components
         self.employee_button = ttk.Button(master, text="Add Employee", command=self.add_employee)
-        self.employee_button.pack(pady=10)
+        self.employee_button.pack(pady=(10, 0))
 
         self.view_employee_button = ttk.Button(master, text="View Employees", command=self.view_employees)
-        self.view_employee_button.pack(pady=10)
+        self.view_employee_button.pack()
 
         # Create a button to open the employee payment popup
         self.pay_employee_button = ttk.Button(master, text="Pay An Employee", command=self.open_payment_popup)
-        self.pay_employee_button.pack(pady=10)
+        self.pay_employee_button.pack()
 
         self.customer_button = ttk.Button(master, text="Add Customer", command=self.add_customer)
-        self.customer_button.pack(pady=10)
+        self.customer_button.pack(pady=(10, 0))
 
         self.view_employee_button = ttk.Button(master, text="View Customers", command=self.view_customers)
-        self.view_employee_button.pack(pady=10)
+        self.view_employee_button.pack()
 
         self.vendor_button = ttk.Button(master, text="Add Vendor", command=self.add_vendor)
-        self.vendor_button.pack(pady=10)
+        self.vendor_button.pack(pady=(10, 0))
 
         self.view_vendor_button = ttk.Button(master, text="View Vendors", command=self.view_vendors)
-        self.view_vendor_button.pack(pady=10)
+        self.view_vendor_button.pack()
 
         self.view_inventory_button = ttk.Button(master, text="View Inventory", command=self.view_inventory)
         self.view_inventory_button.pack(pady=10)
 
         # Create a button to open the purchase order popup
         self.create_purchase_order_button = ttk.Button(master, text="Create Purchase Order", command=self.open_purchase_order_popup)
-        self.create_purchase_order_button.pack(pady=10)
+        self.create_purchase_order_button.pack(pady=(10, 0))
 
         self.purchase_order_history = ttk.Button(master, text="Purchase Order History", command=self.view_purchase_order)
-        self.purchase_order_history.pack(pady=10)
+        self.purchase_order_history.pack()
         
         # Create a button to open the invoice popup
         self.create_invoice_button = ttk.Button(master, text="Create Invoice", command=self.open_invoice_popup)
-        self.create_invoice_button.pack(pady=10)
+        self.create_invoice_button.pack(pady=(10, 0))
 
         self.invoice_history_button = ttk.Button(master, text="Invoice History", command=self.view_invoice_history)
-        self.invoice_history_button.pack(pady=10)
+        self.invoice_history_button.pack()
 
         self.view_balance_sheet_button = ttk.Button(master, text="Show Balance Sheet", command=self.open_balance_sheet_popup)
         self.view_balance_sheet_button.pack(pady=10)
 
         self.view_income_statement_button = ttk.Button(master, text="Show Income Statement", command=self.open_income_statement_popup)
-        self.view_income_statement_button.pack(pady=10)
+        self.view_income_statement_button.pack()
 
         self.result_label = ttk.Label(master, text="")
         self.result_label.pack(pady=10)
@@ -536,6 +536,10 @@ class GUI:
     def view_vendors(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Vendors")
 
+    def save_inventory(self, name, item_id, quantity, unit_price):
+        # Save customer details to database or perform other operations
+        messagebox.showinfo("Success", f"{quantity} items of {name} with ID {item_id} at ${unit_price} each added successfully.")
+    
     def view_inventory(self):
         ViewDatabasePopup(self.master, self.company.cursor, "Inventory")
 
